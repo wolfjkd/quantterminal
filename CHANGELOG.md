@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/),
 
+## [0.2.1] - 2026-07-26
+
+### Fixed
+- 修复 8 个 TypeScript 编译错误（InputNumber label / 未使用 import / unknown 类型 / vite-env.d.ts）
+- src/renderer/package.json 版本号 0.1.0 → 0.2.0（与主 package.json 同步）
+
+### Added
+- 回测中心 21 项指标展示补齐（实际 29 项，按收益/风险/风险调整/交易/费用 5 类分组）
+- 前端 ErrorBoundary 组件（异常时显示 antd Result 错误页 + 重试按钮）
+- docs/phase4-report.md 阶段4测试报告
+- .gitignore 补齐 IDE 配置忽略规则（.vscode/.idea/*.swp）
+
 ## [0.2.0] - 2026-07-26
 
 ### Added - 补做计划中未实现的两个核心页面

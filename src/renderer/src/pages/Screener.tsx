@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Card, Row, Col, Select, Button, Table, Tag, Spin, Input, InputNumber, message, Empty, Statistic } from 'antd';
+import { Card, Row, Col, Select, Button, Table, Tag, Spin, InputNumber, message, Empty, Statistic } from 'antd';
 import { SearchOutlined, ReloadOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { ScreenerCondition, ScreenerResult } from '@/types';
 import { screenerApi } from '@/services/api';
-
-const { Option } = Select;
 
 interface ConditionGroup {
   key: string;

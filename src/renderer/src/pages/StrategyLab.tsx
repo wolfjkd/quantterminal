@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Card, Row, Col, Select, Input, Button, Table, Tag, Spin, Tabs } from 'antd';
+import { Card, Row, Col, Select, Input, Button, Table, Tag, Tabs } from 'antd';
 import ReactECharts from 'echarts-for-react';
-import { Stock, Strategy, Signal, TradingSignal, Factor, FactorScore } from '@/types';
+import { Stock, Strategy, Signal, TradingSignal, FactorScore } from '@/types';
 import { stockApi, strategyApi, signalApi, factorApi } from '@/services/api';
 
 const StrategyLab = () => {
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [strategies, setStrategies] = useState<Record<string, Strategy>>({});
-  const [factors, setFactors] = useState<Record<string, Factor>>({});
   const [selectedStock, setSelectedStock] = useState('');
   const [selectedStrategy, setSelectedStrategy] = useState('');
   const [searchCode, setSearchCode] = useState('');
@@ -22,14 +21,12 @@ const StrategyLab = () => {
 
   const fetchData = async () => {
     try {
-      const [stockRes, strategyRes, factorRes] = await Promise.all([
+      const [stockRes, strategyRes] = await Promise.all([
         stockApi.getStocks(),
         strategyApi.getStrategies(),
-        factorApi.getFactors(),
       ]);
       setStocks(stockRes.data.data || []);
       setStrategies(strategyRes.data.data || {});
-      setFactors(factorRes.data.data || {});
       if (stockRes.data.data?.length) {
         setSelectedStock(stockRes.data.data[0].code);
       }

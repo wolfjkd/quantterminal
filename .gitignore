@@ -9,3 +9,10 @@ src/backend/__pycache__/
 src/backend/.venv/
 src/renderer/node_modules/
 src/renderer/dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

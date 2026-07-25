@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Row, Col, Select, Button, Table, Tag, Spin, InputNumber, message, Empty, Statistic, Tabs, Input } from 'antd';
+import { Card, Row, Col, Select, Button, Table, Tag, Spin, InputNumber, message, Empty, Statistic, Tabs } from 'antd';
 import { ReloadOutlined, ThunderboltOutlined, BarChartOutlined } from '@ant-design/icons';
 import ReactECharts from 'echarts-for-react';
 import { Factor, FactorScore, ICAnalysis } from '@/types';
@@ -26,7 +26,7 @@ const FactorCenter = () => {
       setFactors(data);
       // 初始化权重为默认值
       const initWeights: Record<string, number> = {};
-      Object.entries(data).forEach(([key, factor]) => {
+      (Object.entries(data) as [string, Factor][]).forEach(([key, factor]) => {
         initWeights[key] = factor.default_weight;
       });
       setFactorWeights(initWeights);

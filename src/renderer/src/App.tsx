@@ -12,6 +12,7 @@ import Backtest from './pages/Backtest';
 import StrategyLab from './pages/StrategyLab';
 import Screener from './pages/Screener';
 import FactorCenter from './pages/FactorCenter';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
@@ -65,7 +66,9 @@ const App = () => {
           </Title>
         </Header>
         <Content style={{ background: '#f5f5f5' }}>
-          {renderContent()}
+          <ErrorBoundary>
+            {renderContent()}
+          </ErrorBoundary>
         </Content>
       </Layout>
     </Layout>

@@ -55,18 +55,40 @@ export interface BacktestResult {
 }
 
 export interface Metrics {
-  total_return: number;
-  annualized_return: number;
-  volatility: number;
-  downside_volatility: number;
-  sharpe_ratio: number;
-  sortino_ratio: number;
-  max_drawdown: number;
-  calmar_ratio: number;
-  win_rate: number;
-  profit_factor: number;
-  expected_return: number;
-  num_trades: number;
+  // 收益类
+  total_return?: number;
+  annualized_return?: number;
+  initial_cash?: number;
+  final_equity?: number;
+  trading_days?: number;
+  // 风险类
+  max_drawdown?: number;
+  max_drawdown_days?: number;
+  volatility?: number;
+  downside_volatility?: number;
+  var_95?: number;
+  // 风险调整类
+  sharpe_ratio?: number;
+  sortino_ratio?: number;
+  calmar_ratio?: number;
+  // 交易类
+  num_trades?: number;
+  winning_trades?: number;
+  losing_trades?: number;
+  win_rate?: number;
+  avg_winning_trade?: number;
+  avg_losing_trade?: number;
+  profit_factor?: number;
+  expected_return?: number;
+  max_consecutive_wins?: number;
+  max_consecutive_losses?: number;
+  avg_holding_days?: number;
+  // 费用类
+  total_commission?: number;
+  total_stamp_tax?: number;
+  total_slippage?: number;
+  total_fees?: number;
+  fee_ratio?: number;
 }
 
 export interface Summary {
