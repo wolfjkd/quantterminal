@@ -16,7 +16,7 @@ from quantengine.data.loader import DataLoader
 from quantengine.data.storage import DataStorage
 from quantengine.data.sync import DataSync
 
-app = FastAPI(title="QuantTerminal API", version="0.1.0")
+app = FastAPI(title="QuantTerminal API", version="0.2.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -76,7 +76,7 @@ class SyncRequest(BaseModel):
 
 @app.get("/")
 def root():
-    return {"message": "QuantTerminal API", "version": "0.1.0"}
+    return {"message": "QuantTerminal API", "version": "0.2.0"}
 
 
 @app.get("/health")

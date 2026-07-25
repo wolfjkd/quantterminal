@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/),
 
+## [0.2.0] - 2026-07-26
+
+### Added - 补做计划中未实现的两个核心页面
+- **条件选股页面** (`src/renderer/src/pages/Screener.tsx`) 🆕
+  - 多条件组合筛选：支持添加/删除条件组，AND 逻辑组合
+  - 5 类 30+ 条件可选（基本面/技术面/资金面/风险面/标记）
+  - 6 种比较运算符：`>` `<` `≥` `≤` `=` `≠`
+  - 结果展示：股票代码、收盘价、成交量、匹配条件 Tag
+  - 支持按字段排序、分页、列滚动
+
+- **因子中心页面** (`src/renderer/src/pages/FactorCenter.tsx`) 🆕
+  - **因子库管理 Tab**：因子列表（代码/名称/方向/默认权重/说明）
+  - **自定义权重**：每个因子可调整权重（0-1），实时计算权重总和
+  - **因子评分排行**：按权重计算综合评分，支持排序与因子明细展示
+  - **评分分布图**：ECharts 柱状图展示前 30 只股票评分
+  - **IC 分析 Tab**：单因子 IC/Rank IC 分析 + 对比柱状图
+  - 统计卡片：因子总数、正向因子数、负向因子数、权重总和
+
+- **应用导航**
+  - 新增菜单项：条件选股（FilterOutlined 图标）
+  - 新增菜单项：因子中心（FundProjectionScreenOutlined 图标）
+
+### Changed
+- `package.json` 版本号 0.1.0 → 0.2.0
+- `src/backend/main.py` FastAPI 版本号 0.1.0 → 0.2.0
+- `README.md` 版本徽章、功能模块清单、版本历史表更新
+
+### Tests
+- TypeScript 类型校验通过（所有接口类型已在 `types/index.ts` 中预定义）
+- 后端 API 复用现有 `/screener/*` 和 `/factors/*` 接口，无需新增
+
 ## [0.1.0] - 2026-07-25
 
 ### Added - 初始版本

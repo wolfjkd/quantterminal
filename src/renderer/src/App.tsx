@@ -1,9 +1,17 @@
 import { useState } from 'react';
 import { Layout, Menu, Typography } from 'antd';
-import { DashboardOutlined, BarChartOutlined, ExperimentOutlined } from '@ant-design/icons';
+import {
+  DashboardOutlined,
+  BarChartOutlined,
+  ExperimentOutlined,
+  FilterOutlined,
+  FundProjectionScreenOutlined,
+} from '@ant-design/icons';
 import Dashboard from './pages/Dashboard';
 import Backtest from './pages/Backtest';
 import StrategyLab from './pages/StrategyLab';
+import Screener from './pages/Screener';
+import FactorCenter from './pages/FactorCenter';
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
@@ -15,6 +23,8 @@ const App = () => {
     { key: 'dashboard', icon: <DashboardOutlined />, label: '驾驶舱' },
     { key: 'backtest', icon: <BarChartOutlined />, label: '回测中心' },
     { key: 'strategy', icon: <ExperimentOutlined />, label: '策略研究' },
+    { key: 'screener', icon: <FilterOutlined />, label: '条件选股' },
+    { key: 'factor', icon: <FundProjectionScreenOutlined />, label: '因子中心' },
   ];
 
   const renderContent = () => {
@@ -25,6 +35,10 @@ const App = () => {
         return <Backtest />;
       case 'strategy':
         return <StrategyLab />;
+      case 'screener':
+        return <Screener />;
+      case 'factor':
+        return <FactorCenter />;
       default:
         return <Dashboard />;
     }

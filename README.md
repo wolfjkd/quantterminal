@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/React-18-61dafb.svg" alt="React"/>
   <img src="https://img.shields.io/badge/TypeScript-5-blue.svg" alt="TypeScript"/>
   <img src="https://img.shields.io/badge/FastAPI-0.100-009688.svg" alt="FastAPI"/>
-  <img src="https://img.shields.io/badge/Version-0.1.0-orange.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/Version-0.2.0-orange.svg" alt="Version"/>
 </p>
 
 ---
@@ -66,6 +66,8 @@ quantterminal/
 1. **驾驶舱**: 市场概览、自选股、信号扫描
 2. **回测中心**: 策略回测、参数优化、绩效分析
 3. **策略研究**: 策略编辑器、信号生成、因子分析
+4. **条件选股**: 多条件组合筛选、5类30+条件、AND 逻辑组合 🆕 v0.2.0
+5. **因子中心**: 因子库管理、自定义权重、IC 分析 🆕 v0.2.0
 
 ## 快速开始
 
@@ -109,7 +111,7 @@ npm run dev
 npm run build
 
 # 输出位置
-# dist/QuantTerminal Setup 0.1.0.exe
+# dist/QuantTerminal Setup 0.2.0.exe
 ```
 
 ## 版本历史
@@ -118,6 +120,7 @@ npm run build
 
 | 版本 | 发布日期 | 主要变更 |
 |------|---------|---------|
+| v0.2.0 | 2026-07-26 | 新增条件选股页面 + 因子中心页面（含IC分析），5 大功能模块齐全 |
 | v0.1.0 | 2026-07-25 | 初始版本：驾驶舱 + 回测中心 + 策略研究 三大核心页面 |
 
 ## License
