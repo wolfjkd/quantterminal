@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+.DS_Store
+*.log
+src/backend/__pycache__/
+src/backend/.venv/
+src/renderer/node_modules/
+src/renderer/dist/
