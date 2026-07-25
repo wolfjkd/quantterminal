@@ -1,6 +1,33 @@
 # QuantTerminal
 
-一站式个人量化研究平台
+<p align="center">
+  <strong>一站式个人量化研究平台 · Electron + React + FastAPI</strong><br/>
+  Desktop Application · A股量化交易 · MIT License
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Electron-31-blue.svg" alt="Electron"/>
+  <img src="https://img.shields.io/badge/React-18-61dafb.svg" alt="React"/>
+  <img src="https://img.shields.io/badge/TypeScript-5-blue.svg" alt="TypeScript"/>
+  <img src="https://img.shields.io/badge/FastAPI-0.100-009688.svg" alt="FastAPI"/>
+  <img src="https://img.shields.io/badge/Version-0.1.0-orange.svg" alt="Version"/>
+</p>
+
+---
+
+## 项目定位
+
+QuantTerminal 是基于 [QuantEngine](https://github.com/wolfjkd/quantengine) 引擎层打造的一站式个人量化研究平台。
+为量化交易员提供桌面级的研究、回测、监控一体化环境。
+
+**架构关系**：
+```
+QuantTerminal (应用层, Electron)
+       ↓ HTTP API
+QuantEngine (引擎层) ←─算法─ QuantCore (算法层)
+       ↓ 数据
+Trader Finance Hub (数据层, MCP) ←─ AI Agent 调用
+```
 
 ## 项目结构
 
@@ -74,3 +101,25 @@ npm run dev
 - `/factors/score` - 因子评分
 - `/screener/screen` - 条件选股
 - `/sync` - 数据同步
+
+## 打包发布
+
+```bash
+# 打包 Windows 安装包
+npm run build
+
+# 输出位置
+# dist/QuantTerminal Setup 0.1.0.exe
+```
+
+## 版本历史
+
+详见 [CHANGELOG.md](CHANGELOG.md)
+
+| 版本 | 发布日期 | 主要变更 |
+|------|---------|---------|
+| v0.1.0 | 2026-07-25 | 初始版本：驾驶舱 + 回测中心 + 策略研究 三大核心页面 |
+
+## License
+
+MIT License © 2026 [wolfjkd](https://github.com/wolfjkd)

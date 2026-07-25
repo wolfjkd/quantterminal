@@ -55,6 +55,10 @@ class SignalRequest(BaseModel):
     filters: Optional[Dict[str, Any]] = None
 
 
+class ScanRequest(BaseModel):
+    filters: Optional[Dict[str, Any]] = None
+
+
 class FactorRequest(BaseModel):
     factor_weights: Optional[Dict[str, float]] = None
     filters: Optional[Dict[str, Any]] = None
@@ -156,7 +160,7 @@ def analyze_signal(request: SignalRequest):
 
 
 @app.post("/signal/scan")
-def scan_signals(request: SignalRequest):
+def scan_signals(request: ScanRequest):
     try:
         stocks = storage.get_stock_list()[:50]
         stocks_data = {}
