@@ -4,6 +4,44 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/),
 
+## [0.3.1] - 2026-07-26
+
+### Fixed
+- 修复 /workbench/prepare 死端点：原返回占位响应，改造为真实批量同步（取 K 线最旧的 N 只股票调用 sync_service 拉取东方财富数据写入 SQLite）
+- 修复 Workbench.tsx 准备行情按钮死代码：改为调用真实 API workbenchApi.prepare()，带 loading 状态和成功/失败提示
+- 修复 stocks.py 路由：找不到股票时返回 HTTPException 404（替代占位响应）
+- 清理全局阶段 A/B/C/D 开发期临时标签：11 个 router + 4 个 service 的 docstring/注释
+- 清理参考 lianghua / 与 lianghua 一致 字样：factor.py / screener.py / settings.py / Settings.tsx / compare_service.py / market_data_service.py / auth_service.py / backtest_service.py
+- 删除死代码 src/renderer/src/components/Placeholder.tsx（未被任何页面引用）
+- 删除死代码 src/backend/routers/_common.py（占位构造器，迁移完已无引用）
+- 重命名 LIANGHUA_MYSQL_URL 为 LEGACY_MYSQL_URL（语义更中性）
+
+### Changed
+- 重写 src/renderer/src/pages/About.tsx：删除阶段 B/C/D 分组，改为正式产品介绍（技术栈/核心能力/业务模块按功能分组）
+- src/backend/routers/radar.py 多处阶段 C+ 接入 trader-finance-hub 占位文案改为暂未启用，可后续接入
+- src/backend/services/radar_service.py docstring 同步清理
+
+### Added
+- 新增 /workbench/prepare 真实同步逻辑：批量同步最旧数据的股票 K 线，支持 smart/full 模式
+- 新增 Workbench.tsx handlePrepare 函数：调用真实 API + loading 状态
+
+## [0.3.0] - 2026-07-26
+
+### Added - 全面重做
+- 20 个业务模块全部上线：总览/操盘台/双核对比/量化工作台/市场雷达/股票池/自选股/投资组合/回测中心/策略管理/因子中心/条件选股/实时分析/全A动向/行情同步/交易计划/交易笔记/系统设置/审计日志/关于
+- 行情同步真实接入：东方财富 push2his/push2 接口，支持日 K 线、股票列表、实时报价
+- 回测引擎完整集成：8 种策略 + 29 项绩效指标 + 净值曲线 + 交易明细 + 持仓快照
+- 因子引擎完整集成：5 类 22 因子 + 多因子加权打分 + IC 分析
+- 条件选股完整集成：5 类 30+ 条件 + 多条件 AND 组合 + 6 种比较运算符
+- A 股特色规则：T+1 交易制度 + 5%/10%/20% 三档涨跌停 + 佣金+印花税模拟
+- JWT 认证：兼容 PHP bcrypt 哈希，支持自动登录状态管理
+- 数据迁移：26 张表 + 5067 只股票 + 85527 条 K 线从 MariaDB 迁移至 SQLite
+
+### Changed
+- package.json 版本号 0.2.1 至 0.3.0
+- src/backend/config.py APP_VERSION 0.2.0 至 0.3.0
+- 技术栈升级：PHP+MariaDB 至 Python+SQLite，保留 Electron 前端
+
 ## [0.2.1] - 2026-07-26
 
 ### Fixed

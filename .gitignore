@@ -15,4 +15,13 @@ src/renderer/dist/
 .idea/
 *.swp
 *.swo
-*~
+*~# 数据库文件（运行时数据，不提交）
+data/
+*.db
+*.sqlite
+*.sqlite3
+# Python 缓存
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd

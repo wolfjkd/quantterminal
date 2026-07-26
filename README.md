@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/React-18-61dafb.svg" alt="React"/>
   <img src="https://img.shields.io/badge/TypeScript-5-blue.svg" alt="TypeScript"/>
   <img src="https://img.shields.io/badge/FastAPI-0.100-009688.svg" alt="FastAPI"/>
-  <img src="https://img.shields.io/badge/Version-0.2.1-orange.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/Version-0.3.1-orange.svg" alt="Version"/>
 </p>
 
 ---
@@ -111,7 +111,7 @@ npm run dev
 npm run build
 
 # 输出位置
-# dist/QuantTerminal Setup 0.2.1.exe
+# dist/QuantTerminal Setup 0.3.1.exe
 ```
 
 ## 版本历史
@@ -120,6 +120,8 @@ npm run build
 
 | 版本 | 发布日期 | 主要变更 |
 |------|---------|---------|
+| v0.3.1 | 2026-07-26 | 自查修复：workbench/prepare死端点改造+About页重写+阶段A/B/C/D标签清理+版本号同步 |
+| v0.3.0 | 2026-07-26 | 对标真实业务系统全面重做：20模块上线+行情同步接入+回测/因子/选股引擎完整集成 |
 | v0.2.1 | 2026-07-26 | 修复8个TS编译错误+回测中心29项指标补齐+ErrorBoundary容错+阶段4测试报告 |
 | v0.2.0 | 2026-07-26 | 新增条件选股页面 + 因子中心页面（含IC分析），5 大功能模块齐全 |
 | v0.1.0 | 2026-07-25 | 初始版本：驾驶舱 + 回测中心 + 策略研究 三大核心页面 |

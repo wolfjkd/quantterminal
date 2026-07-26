@@ -1,241 +1,302 @@
-import { useState, useEffect } from 'react';
-import { Card, Row, Col, Select, Button, Table, Tag, Spin, InputNumber, message, Empty, Statistic } from 'antd';
-import { SearchOutlined, ReloadOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
-import { ScreenerCondition, ScreenerResult } from '@/types';
-import { screenerApi } from '@/services/api';
+/** 条件选股
+ *
+*   - 5 类 30+ 条件（基本面/技术面/资金面/风险面/标记类）
+ *   - 多条件组合 + 板块过滤 + TopN
+ *   - 桥接 quantengine.Screener
+ */
+import { useEffect, useState } from 'react';
+import {
+  Card, Row, Col, Typography, Tag, Button, Space, Statistic, Table, Empty,
+  InputNumber, Select, message, Alert, Tabs, Badge, Divider, Spin, Switch,
+} from 'antd';
+import {
+  ReloadOutlined, ThunderboltOutlined, FilterOutlined, CheckCircleOutlined,
+} from '@ant-design/icons';
+import { screenerApi } from '../services/api';
 
-interface ConditionGroup {
-  key: string;
-  field: string;
-  operator: string;
-  value: number | string | boolean;
+const { Title, Text } = Typography;
+
+// ============ 类型 ============
+
+interface ConditionConfig {
+  name: string;
+  category: string;
+  description: string;
+  params: Record<string, number | string>;
 }
 
-const OPERATORS = [
-  { value: '>', label: '大于 >' },
-  { value: '<', label: '小于 <' },
-  { value: '>=', label: '大于等于 ≥' },
-  { value: '<=', label: '小于等于 ≤' },
-  { value: '==', label: '等于 =' },
-  { value: '!=', label: '不等于 ≠' },
-];
+interface ConditionsResp {
+  available: boolean;
+  error?: string;
+  conditions: Record<string, ConditionConfig>;
+  categories: Record<string, string[]>;
+}
 
-const Screener = () => {
-  const [conditions, setConditions] = useState<Record<string, ScreenerCondition>>({});
-  const [conditionGroups, setConditionGroups] = useState<ConditionGroup[]>([
-    { key: '1', field: '', operator: '>', value: 0 },
-  ]);
-  const [results, setResults] = useState<ScreenerResult[]>([]);
+interface ScreenResult {
+  rank: number;
+  code: string;
+  name: string;
+  close: number;
+  volume: number;
+  matched_conditions: string[];
+}
+
+const CATEGORY_LABEL: Record<string, string> = {
+  fundamental: '基本面',
+  technical: '技术面',
+  money: '资金面',
+  risk: '风险面',
+  tag: '标记类',
+};
+
+const CATEGORY_COLOR: Record<string, string> = {
+  fundamental: 'blue',
+  technical: 'orange',
+  money: 'gold',
+  risk: 'red',
+  tag: 'purple',
+};
+
+// ============ 主组件 ============
+
+export default function Screener() {
+  const [data, setData] = useState<ConditionsResp | null>(null);
   const [loading, setLoading] = useState(false);
-  const [conditionsLoading, setConditionsLoading] = useState(false);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [params, setParams] = useState<Record<string, Record<string, number | string>>>({});
+  const [limit, setLimit] = useState(1000);
+  const [topN, setTopN] = useState(100);
+  const [board, setBoard] = useState<string | undefined>(undefined);
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<{ data: ScreenResult[]; count: number; total_matched: number; total_scanned: number } | null>(null);
 
-  useEffect(() => {
-    fetchConditions();
-  }, []);
-
-  const fetchConditions = async () => {
-    setConditionsLoading(true);
-    try {
-      const res = await screenerApi.getConditions();
-      setConditions(res.data.data || {});
-    } catch (error) {
-      console.error('Failed to fetch conditions:', error);
-      message.error('获取选股条件失败');
-    } finally {
-      setConditionsLoading(false);
-    }
-  };
-
-  const handleAddCondition = () => {
-    const newKey = String(Date.now());
-    setConditionGroups([...conditionGroups, { key: newKey, field: '', operator: '>', value: 0 }]);
-  };
-
-  const handleRemoveCondition = (key: string) => {
-    setConditionGroups(conditionGroups.filter(g => g.key !== key));
-  };
-
-  const handleConditionChange = (key: string, field: keyof ConditionGroup, value: any) => {
-    setConditionGroups(conditionGroups.map(g => g.key === key ? { ...g, [field]: value } : g));
-  };
-
-  const handleScreen = async () => {
-    const validGroups = conditionGroups.filter(g => g.field);
-    if (validGroups.length === 0) {
-      message.warning('请至少添加一个有效条件');
-      return;
-    }
-
-    const conditionsPayload: Record<string, Record<string, any>> = {};
-    validGroups.forEach((g, idx) => {
-      conditionsPayload[`cond_${idx + 1}`] = {
-        field: g.field,
-        operator: g.operator,
-        value: g.value,
-      };
-    });
-
+  const load = async () => {
     setLoading(true);
     try {
-      const res = await screenerApi.screen(conditionsPayload);
-      setResults(res.data.data || []);
-      message.success(`筛选完成，共匹配 ${res.data.count || 0} 只股票`);
-    } catch (error) {
-      console.error('Screen failed:', error);
-      message.error('筛选失败，请检查后端服务');
+      const resp = await screenerApi.conditions();
+      setData(resp.data);
+    } catch (e: any) {
+      message.error('加载条件清单失败：' + (e?.message || e));
     } finally {
       setLoading(false);
     }
   };
 
-  const fieldOptions = Object.entries(conditions).map(([key, cond]) => ({
-    value: key,
-    label: `${key} - ${cond.description}`,
-  }));
+  useEffect(() => { load(); }, []);
+
+  const toggleCondition = (code: string, checked: boolean) => {
+    setSelected({ ...selected, [code]: checked });
+  };
+
+  const setParam = (code: string, key: string, value: number | string) => {
+    setParams({ ...params, [code]: { ...(params[code] || {}), [key]: value } });
+  };
+
+  const runScreen = async () => {
+    const selectedCodes = Object.keys(selected).filter((c) => selected[c]);
+    if (selectedCodes.length === 0) {
+      message.warning('请至少选择一个条件');
+      return;
+    }
+    const conditions: Record<string, Record<string, unknown>> = {};
+    selectedCodes.forEach((code) => {
+      conditions[code] = (params[code] || {}) as Record<string, unknown>;
+    });
+
+    setRunning(true);
+    try {
+      const resp = await screenerApi.screen({
+        conditions,
+        limit,
+        board,
+        top_n: topN,
+      });
+      if (resp.data?.error) {
+        message.error(resp.data.error);
+      } else {
+        setResult(resp.data);
+        message.success(`筛选完成，命中 ${resp.data.total_matched} / 扫描 ${resp.data.total_scanned}，返回 Top${resp.data.count}`);
+      }
+    } catch (e: any) {
+      message.error('筛选失败：' + (e?.message || e));
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  if (loading) return <Spin tip="加载条件清单..." />;
+  if (!data) return <Empty />;
+  if (!data.available) {
+    return <Alert type="error" showIcon message="quantengine 引擎不可用" description={data.error} />;
+  }
+
+  const conditions = data.conditions || {};
+  const categories = data.categories || {};
+  const totalConditions = Object.keys(conditions).length;
+  const selectedCount = Object.values(selected).filter(Boolean).length;
 
   const columns = [
+    { title: '排名', dataIndex: 'rank', width: 70, render: (v: number) => <Badge count={v} style={{ backgroundColor: '#1677ff' }} /> },
+    { title: '代码', dataIndex: 'code', width: 90 },
+    { title: '名称', dataIndex: 'name', width: 120 },
+    { title: '最新价', dataIndex: 'close', width: 90, render: (v: number) => v?.toFixed(2) },
     {
-      title: '股票代码',
-      dataIndex: 'stock_code',
-      key: 'stock_code',
-      width: 120,
-      render: (code: string) => <a href={`#${code}`}>{code}</a>,
+      title: '成交量', dataIndex: 'volume', width: 130,
+      render: (v: number) => {
+        if (v >= 1e8) return (v / 1e8).toFixed(2) + ' 亿';
+        if (v >= 1e4) return (v / 1e4).toFixed(0) + ' 万';
+        return v;
+      },
     },
     {
-      title: '收盘价',
-      dataIndex: 'close',
-      key: 'close',
-      width: 100,
-      sorter: (a: ScreenerResult, b: ScreenerResult) => a.close - b.close,
-      render: (v: number) => v?.toFixed(2),
-    },
-    {
-      title: '成交量',
-      dataIndex: 'volume',
-      key: 'volume',
-      width: 120,
-      sorter: (a: ScreenerResult, b: ScreenerResult) => a.volume - b.volume,
-      render: (v: number) => v?.toLocaleString(),
-    },
-    {
-      title: '匹配条件',
-      dataIndex: 'matched_conditions',
-      key: 'matched_conditions',
+      title: '命中条件', dataIndex: 'matched_conditions',
       render: (conds: string[]) => (
-        <span>
-          {conds?.map(c => <Tag key={c} color="blue">{c}</Tag>)}
-        </span>
+        <Space wrap size={4}>
+          {conds.map((c) => {
+            const cfg = conditions[c];
+            return (
+              <Tag key={c} color={CATEGORY_COLOR[cfg?.category] || 'default'} style={{ fontSize: 11 }}>
+                {cfg?.name || c}
+              </Tag>
+            );
+          })}
+        </Space>
       ),
     },
   ];
 
   return (
-    <div style={{ padding: '20px' }}>
-      <Spin spinning={conditionsLoading}>
-        <Card
-          title="条件选股"
-          extra={
-            <Button icon={<ReloadOutlined />} onClick={fetchConditions}>
-              刷新条件
-            </Button>
-          }
-        >
-          <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-            <Col span={24}>
-              <Statistic
-                title="可选条件数"
-                value={Object.keys(conditions).length}
-                suffix="个"
-              />
-            </Col>
-          </Row>
-
-          {conditionGroups.map(group => (
-            <Row gutter={[8, 8]} key={group.key} style={{ marginBottom: 8 }}>
-              <Col span={10}>
-                <Select
-                  style={{ width: '100%' }}
-                  placeholder="选择条件字段"
-                  value={group.field || undefined}
-                  onChange={v => handleConditionChange(group.key, 'field', v)}
-                  showSearch
-                  optionFilterProp="label"
-                  options={fieldOptions}
-                />
-              </Col>
-              <Col span={4}>
-                <Select
-                  style={{ width: '100%' }}
-                  value={group.operator}
-                  onChange={v => handleConditionChange(group.key, 'operator', v)}
-                  options={OPERATORS}
-                />
-              </Col>
-              <Col span={8}>
-                <InputNumber
-                  style={{ width: '100%' }}
-                  placeholder="输入阈值"
-                  value={group.value as number}
-                  onChange={v => handleConditionChange(group.key, 'value', v ?? 0)}
-                />
-              </Col>
-              <Col span={2}>
-                <Button
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => handleRemoveCondition(group.key)}
-                  disabled={conditionGroups.length === 1}
-                />
-              </Col>
-            </Row>
-          ))}
-
-          <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-            <Col span={6}>
-              <Button
-                type="dashed"
-                icon={<PlusOutlined />}
-                onClick={handleAddCondition}
-                block
-              >
-                添加条件
-              </Button>
-            </Col>
-            <Col span={6}>
+    <Space direction="vertical" style={{ width: '100%' }} size="middle">
+      <Card size="small">
+        <Row align="middle" justify="space-between">
+          <Col>
+            <Title level={4} style={{ margin: 0 }}>
+              <FilterOutlined /> 条件选股器
+            </Title>
+            <Text type="secondary">
+              桥接 quantengine.Screener · {totalConditions} 个条件
+            </Text>
+          </Col>
+          <Col>
+            <Space>
+              <Button icon={<ReloadOutlined />} onClick={load}>刷新</Button>
               <Button
                 type="primary"
-                icon={<SearchOutlined />}
-                onClick={handleScreen}
-                loading={loading}
-                block
+                icon={<ThunderboltOutlined />}
+                onClick={runScreen}
+                loading={running}
               >
-                开始筛选
+                执行筛选 ({selectedCount})
               </Button>
-            </Col>
-          </Row>
-        </Card>
-      </Spin>
-
-      <Card
-        title="筛选结果"
-        style={{ marginTop: 16 }}
-        extra={<Tag color="blue">{results.length} 只匹配</Tag>}
-      >
-        {results.length === 0 ? (
-          <Empty description="暂无筛选结果，请配置条件后筛选" />
-        ) : (
-          <Table
-            columns={columns}
-            dataSource={results}
-            rowKey="stock_code"
-            pagination={{ pageSize: 20, showSizeChanger: true }}
-            scroll={{ y: 500 }}
-            loading={loading}
-          />
-        )}
+            </Space>
+          </Col>
+        </Row>
       </Card>
-    </div>
-  );
-};
 
-export default Screener;
+      <Card size="small" title="筛选配置">
+        <Row gutter={16}>
+          <Col span={6}>
+            <Text>扫描股票数（按成交额降序）</Text>
+            <InputNumber min={100} max={5000} step={100} value={limit} onChange={(v) => setLimit(v || 1000)} style={{ width: '100%' }} />
+          </Col>
+          <Col span={6}>
+            <Text>返回 Top N</Text>
+            <InputNumber min={1} max={500} value={topN} onChange={(v) => setTopN(v || 100)} style={{ width: '100%' }} />
+          </Col>
+          <Col span={6}>
+            <Text>板块过滤</Text>
+            <Select
+              allowClear
+              value={board}
+              onChange={setBoard}
+              style={{ width: '100%' }}
+              options={[
+                { value: 'main', label: '主板' },
+                { value: 'gem', label: '创业板' },
+                { value: 'star', label: '科创板' },
+              ]}
+            />
+          </Col>
+          <Col span={6}>
+            <Card size="small" style={{ marginTop: 16 }}>
+              <Statistic title="已选条件" value={selectedCount} prefix={<CheckCircleOutlined />} />
+            </Card>
+          </Col>
+        </Row>
+      </Card>
+
+      <Tabs
+        items={Object.entries(categories).map(([cat, codes]) => ({
+          key: cat,
+          label: (
+            <Space>
+              <Tag color={CATEGORY_COLOR[cat] || 'default'}>{CATEGORY_LABEL[cat] || cat}</Tag>
+              <Text type="secondary">{codes.length}</Text>
+            </Space>
+          ),
+          children: (
+            <Row gutter={[8, 8]}>
+              {codes.map((code) => {
+                const cfg = conditions[code];
+                if (!cfg) return null;
+                const isSelected = !!selected[code];
+                const cfgParams = params[code] || cfg.params || {};
+                return (
+                  <Col key={code} xs={24} sm={12} md={8} lg={6}>
+                    <Card
+                      size="small"
+                      style={{
+                        borderColor: isSelected ? '#1677ff' : undefined,
+                        borderWidth: isSelected ? 2 : 1,
+                      }}
+                    >
+                      <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                          <Space>
+                            <Switch size="small" checked={isSelected} onChange={(v) => toggleCondition(code, v)} />
+                            <Text strong>{cfg.name}</Text>
+                          </Space>
+                          <Tag color={CATEGORY_COLOR[cat] || 'default'} style={{ fontSize: 10 }}>{code}</Tag>
+                        </Space>
+                        <Text type="secondary" style={{ fontSize: 11 }}>{cfg.description}</Text>
+                        {Object.keys(cfg.params || {}).length > 0 && (
+                          <>
+                            <Divider style={{ margin: '4px 0' }} />
+                            {Object.entries(cfg.params).map(([pk, pv]) => (
+                              <Space key={pk} size={4} style={{ width: '100%', fontSize: 11 }}>
+                                <Text type="secondary" style={{ minWidth: 50 }}>{pk}:</Text>
+                                <InputNumber
+                                  size="small"
+                                  style={{ width: '100%' }}
+                                  value={cfgParams[pk] ?? pv}
+                                  onChange={(v) => setParam(code, pk, v ?? pv)}
+                                />
+                              </Space>
+                            ))}
+                          </>
+                        )}
+                      </Space>
+                    </Card>
+                  </Col>
+                );
+              })}
+            </Row>
+          ),
+        }))}
+      />
+
+      {result && (
+        <Card size="small" title={`筛选结果（Top ${result.count} / 命中 ${result.total_matched} / 扫描 ${result.total_scanned}）`}>
+          <Table
+            dataSource={result.data}
+            columns={columns}
+            rowKey="code"
+            size="small"
+            pagination={{ pageSize: 20, size: 'default' }}
+            scroll={{ y: 600 }}
+          />
+        </Card>
+      )}
+    </Space>
+  );
+}
