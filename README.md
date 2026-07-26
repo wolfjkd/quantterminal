@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/React-18-61dafb.svg" alt="React"/>
   <img src="https://img.shields.io/badge/TypeScript-5-blue.svg" alt="TypeScript"/>
   <img src="https://img.shields.io/badge/FastAPI-0.100-009688.svg" alt="FastAPI"/>
-  <img src="https://img.shields.io/badge/Version-0.4.0-orange.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/Version-0.4.1-orange.svg" alt="Version"/>
 </p>
 
 ---
@@ -124,6 +124,7 @@ npm run build
 
 | 版本 | 发布日期 | 主要变更 |
 |------|---------|---------|
+| v0.4.1 | 2026-07-26 | 打包基础设施：PyInstaller 后端封装+环境变量支持+dev/prod 模式区分+NSIS 安装包（119MB） |
 | v0.4.0 | 2026-07-26 | 接入 trader-finance-hub 通达信实时行情+Lightweight Charts K线图+vitest前端单测+Electron NSIS打包 |
 | v0.3.1 | 2026-07-26 | 自查修复：workbench/prepare死端点改造+About页重写+阶段A/B/C/D标签清理+版本号同步 |
 | v0.3.0 | 2026-07-26 | 对标真实业务系统全面重做：20模块上线+行情同步接入+回测/因子/选股引擎完整集成 |

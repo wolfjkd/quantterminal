@@ -2,6 +2,8 @@
 
 FastAPI + SQLAlchemy + SQLite + JWT，注册 20 个业务 router。
 """
+import os
+import sys
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -56,11 +58,21 @@ for r in ALL_ROUTERS:
     app.include_router(r)
 
 
+def _is_frozen() -> bool:
+    """是否运行在 PyInstaller 打包环境中"""
+    return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
+
+
 if __name__ == "__main__":
-    uvicorn.run(
-        "backend.main:app",
-        host=APP_HOST,
-        port=APP_PORT,
-        reload=True,
-        reload_dirs=["backend"],
-    )
+    if _is_frozen():
+        # 打包模式：直接传 app 对象（PyInstaller 字符串导入不可靠）
+        uvicorn.run(app, host=APP_HOST, port=APP_PORT, reload=False)
+    else:
+        # 开发模式：字符串导入 + reload
+        uvicorn.run(
+            "backend.main:app",
+            host=APP_HOST,
+            port=APP_PORT,
+            reload=True,
+            reload_dirs=["backend"],
+        )

@@ -7,7 +7,14 @@ from pathlib import Path
 BACKEND_DIR = Path(__file__).resolve().parent
 SRC_DIR = BACKEND_DIR.parent
 PROJECT_ROOT = SRC_DIR.parent
-DATA_DIR = PROJECT_ROOT / "data"
+
+# 数据目录：优先用环境变量（打包后由 Electron 主进程传入 userData 目录）
+# 开发模式默认放在项目根 data/ 下
+_DATA_DIR_ENV = os.environ.get("QT_DATA_DIR")
+if _DATA_DIR_ENV:
+    DATA_DIR = Path(_DATA_DIR_ENV)
+else:
+    DATA_DIR = PROJECT_ROOT / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # ============ 数据库 ============
@@ -25,9 +32,10 @@ JWT_EXPIRE_HOURS = 24
 
 # ============ 应用 ============
 APP_NAME = "QuantTerminal"
-APP_VERSION = "0.4.0"
+APP_VERSION = "0.4.1"
 APP_HOST = "127.0.0.1"
-APP_PORT = 8001
+# 端口：优先用环境变量（打包后由 Electron 主进程传入，避免冲突）
+APP_PORT = int(os.environ.get("QT_BACKEND_PORT", "8001"))
 
 # trader-finance-hub 后端（实时行情源/全市场数据）
 TFH_BASE_URL = "http://127.0.0.1:8000"
@@ -46,4 +54,8 @@ BOARD_LIMIT_GEM = 0.20
 FILL_PRICE = "next_open"
 
 # ============ 跨项目引用 ============
-QUANT_PROJECTS_ROOT = Path(r"C:\Users\wolfj\Documents\trae_projects")
+# 优先用环境变量（打包后无源码路径），默认值仅用于开发环境
+QUANT_PROJECTS_ROOT = Path(os.environ.get(
+    "QUANT_PROJECTS_ROOT",
+    r"C:\Users\wolfj\Documents\trae_projects",
+))

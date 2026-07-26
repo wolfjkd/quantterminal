@@ -12,13 +12,18 @@
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
 # 动态加载 trader-finance-hub/src 到 sys.path
-_TFH_SRC = Path(r"C:\Users\wolfj\Documents\trae_projects\trader-finance-hub\src")
-if str(_TFH_SRC) not in sys.path:
+# 优先用环境变量（打包后无源码路径），默认值仅用于开发环境
+_TFH_SRC = Path(os.environ.get(
+    "TFH_SRC_DIR",
+    r"C:\Users\wolfj\Documents\trae_projects\trader-finance-hub\src",
+))
+if _TFH_SRC.exists() and str(_TFH_SRC) not in sys.path:
     sys.path.insert(0, str(_TFH_SRC))
 
 try:

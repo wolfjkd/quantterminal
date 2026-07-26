@@ -1,6 +1,8 @@
 node_modules/
 dist/
 build/
+build-backend/
+dist-backend/
 .env
 .env.local
 .DS_Store

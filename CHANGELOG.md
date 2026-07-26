@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/),
 
+## [0.4.1] - 2026-07-26
+
+### Added
+- **PyInstaller 打包脚本** (`scripts/build_backend.py`)：把 FastAPI 后端封装为独立 `quantterminal-backend.exe`（44.5 MB），显式声明 hidden-imports 避免动态导入遗漏
+- **Electron NSIS 安装包**：`QuantTerminal Setup 0.4.0.exe`（119.6 MB），包含 Electron 运行时 + 前端 dist + backend exe
+- **dev/prod 模式区分** (`src/main/index.js`)：开发模式跑 Python 源码，打包模式 spawn backend exe，数据目录指向 userData
+- **环境变量覆盖配置**：`QT_BACKEND_PORT` / `QT_DATA_DIR` / `QUANT_PROJECTS_ROOT` / `TFH_SRC_DIR`，打包后无源码路径也能跑
+
+### Changed
+- `src/backend/config.py`：APP_PORT / DATA_DIR / QUANT_PROJECTS_ROOT 改为环境变量优先
+- `src/backend/main.py`：PyInstaller frozen 模式下关闭 reload，直接传 app 对象给 uvicorn（字符串导入在打包后不可靠）
+- `src/backend/services/tfhub_service.py`：`_TFH_SRC` 改为环境变量优先，路径不存在时不插入 sys.path（打包后自动降级）
+- `src/main/index.js`：端口 8000 → 8001（与后端一致），用 `app.isPackaged` 区分 dev/prod，打包模式从 `process.resourcesPath/backend/` 启动 exe
+- `package.json`：electron/electron-builder 移到 devDependencies，新增 author/license，build 配置加 extraResources + NSIS 选项 + signAndEditExecutable=false
+
+### Infrastructure
+- 新增 `scripts/build_backend.py`：PyInstaller onefile 打包脚本，显式声明 26 个 hidden-imports + 5 个 collect-submodules
+- electron-builder 配置：extraResources 嵌入 backend exe，NSIS 支持自定义安装路径/桌面快捷方式/开始菜单
+
+### 升级指引（v0.4.0 → v0.4.1）
+1. 完整打包流程：`npm run build`（依次执行 build:backend → build:renderer → build:electron）
+2. 打包前确保 `pip install pyinstaller` 已安装
+3. 打包需要 npm 镜像环境变量：`ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/`
+4. Windows 普通用户打包需在 `node_modules/app-builder-lib/out/codeSign/windowsCodeSign.js` 中 patch `getSignVendorPath` 返回本地预解压目录（避免符号链接权限问题）
+5. 输出：`dist/QuantTerminal Setup 0.4.0.exe`（注意：exe 文件名版本号保持 0.4.0，代码版本已升 0.4.1，下次发版统一）
+
 ## [0.4.0] - 2026-07-26
 
 ### Added
