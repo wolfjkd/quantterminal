@@ -3,7 +3,7 @@
  */
 import axios, { AxiosError } from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001';
 
 const TOKEN_KEY = 'qt_access_token';
 const USER_KEY = 'qt_user_info';
@@ -197,6 +197,12 @@ export const screenerApi = {
 
 export const realtimeApi = {
   stock: (code: string) => api.get(`/realtime/${code}`),
+  // 通达信实时行情源（eltdx 协议）
+  tfhubHealth: () => api.get(`/realtime/tfhub/health`),
+  tfhubQuote: (codes: string[]) =>
+    api.post(`/realtime/tfhub/quote`, { codes }),
+  tfhubAuction: (code: string) => api.get(`/realtime/tfhub/auction/${code}`),
+  tfhubMinute: (code: string) => api.get(`/realtime/tfhub/minute/${code}`),
 };
 
 export const marketApi = {

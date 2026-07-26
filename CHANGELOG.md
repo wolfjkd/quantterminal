@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/),
 
+## [0.4.0] - 2026-07-26
+
+### Added
+- **通达信实时行情接入**：新增 `src/backend/services/tfhub_service.py`，封装 trader-finance-hub 的 eltdx 协议，提供行情快照/集合竞价/分时数据
+- **新增 4 个 API 端点**：`/realtime/tfhub/health`、`/realtime/tfhub/quote`、`/realtime/tfhub/auction/{code}`、`/realtime/tfhub/minute/{code}`
+- **K 线图组件** (`src/renderer/src/components/KlineChart.tsx`)：基于 Lightweight Charts 4.1 封装，支持蜡烛图+成交量副图+时间轴缩放平移+容器自适应
+- **前端单测框架**：vitest 4 + @testing-library/react + jsdom
+- **示例测试用例**：`src/test/storage.test.ts`（6 用例）、`src/test/KlineChart.test.tsx`（3 用例），共 9 用例全部通过
+- **vite.config.ts 测试配置**：jsdom 环境 + setup 文件 + v8 覆盖率报告
+
+### Changed
+- 解决端口冲突：quantterminal 后端从 8000 改为 8001（trader-finance-hub 占用 8000）
+- `src/backend/config.py`：新增 `TFH_BASE_URL` 配置项，APP_PORT 8000 → 8001，APP_VERSION 0.3.1 → 0.4.0
+- `src/renderer/src/services/api.ts`：BASE_URL 同步至 8001，新增 `realtimeApi.tfhub*` 系列方法
+- `src/renderer/src/pages/Realtime.tsx`：新增「通达信实时行情」Tab，含健康检查/批量快照/分时图/集合竞价展示；日K分析 Tab 增加 Lightweight Charts/ECharts 切换
+- `src/renderer/src/pages/Stocks.tsx`：股票列表行点击查看 K 线图（Modal 形式）
+- `src/renderer/package.json`：新增 test/test:watch/test:coverage 脚本
+- README.md：版本徽章/打包路径/版本历史表/技术栈/功能模块全面更新
+
+### Fixed
+- 修复 vitest 4 兼容性：`vi.fn().mockImplementation()` 不能作为构造函数，`ResizeObserver` mock 改用真正的 class 实现
+- 修复 TypeScript 类型错误：KlineChart 中 lightweight-charts `time` 字段使用 `as unknown as UTCTimestamp` 绕过（库实际支持 'YYYY-MM-DD' 字符串）
+
+### Infrastructure
+- 新增 dev 依赖：vitest、@testing-library/react、@testing-library/jest-dom、@testing-library/user-event、jsdom、lightweight-charts
+
+### 升级指引（v0.3.1 → v0.4.0）
+1. 后端端口从 8000 改为 8001，如有自定义脚本调用需同步修改
+2. 启动前确保 trader-finance-hub 已在 8000 端口运行（实时行情 Tab 依赖）
+3. 在 `src/renderer` 执行 `npm install` 安装新增依赖（lightweight-charts/vitest 等）
+4. 运行 `npm test` 执行前端单测
+
 ## [0.3.1] - 2026-07-26
 
 ### Fixed

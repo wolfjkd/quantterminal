@@ -1,7 +1,8 @@
-/** 股票池 */
+/** 股票池 — 列表 + 点击查看 K 线图（lightweight-charts） */
 import { useEffect, useState } from 'react';
-import { Card, Table, Input, Space, Tag, Select } from 'antd';
-import { stocksApi } from '../services/api';
+import { Card, Table, Input, Space, Tag, Select, Modal, Spin, Empty, message } from 'antd';
+import { stocksApi, realtimeApi } from '../services/api';
+import KlineChart, { type KlinePoint } from '../components/KlineChart';
 
 interface StockRow {
   id: number;
@@ -24,6 +25,12 @@ export default function Stocks() {
   const [keyword, setKeyword] = useState('');
   const [market, setMarket] = useState<string | undefined>(undefined);
 
+  // K 线 Modal
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalStock, setModalStock] = useState<StockRow | null>(null);
+  const [modalKlines, setModalKlines] = useState<KlinePoint[]>([]);
+  const [modalLoading, setModalLoading] = useState(false);
+
   const fetch = async () => {
     setLoading(true);
     try {
@@ -39,6 +46,25 @@ export default function Stocks() {
 
   useEffect(() => { fetch(); }, [page, pageSize, market]);
 
+  const showKline = async (row: StockRow) => {
+    setModalStock(row);
+    setModalOpen(true);
+    setModalKlines([]);
+    setModalLoading(true);
+    try {
+      const { data: res } = await realtimeApi.stock(row.code);
+      setModalKlines(res.klines || []);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const msg = status === 404
+        ? '该股票暂无 K 线数据（请先在「行情同步」页拉取）'
+        : (err?.response?.data?.detail || '加载失败');
+      message.error(msg);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
   const columns = [
     { title: '代码', dataIndex: 'code', width: 120, render: (v: string) => <strong>{v}</strong> },
     { title: '名称', dataIndex: 'name', width: 120 },
@@ -53,6 +79,12 @@ export default function Stocks() {
       render: (v: number) => v ? <Tag color="red">ST</Tag> : '-',
     },
     { title: '上市日期', dataIndex: 'list_date', width: 120 },
+    {
+      title: '操作', width: 100,
+      render: (_: unknown, row: StockRow) => (
+        <a onClick={() => showKline(row)}>查看 K 线</a>
+      ),
+    },
   ];
 
   return (
@@ -91,6 +123,24 @@ export default function Stocks() {
           }}
         />
       </Card>
+
+      <Modal
+        title={modalStock ? `${modalStock.code} ${modalStock.name} — K 线图` : 'K 线图'}
+        open={modalOpen}
+        onCancel={() => setModalOpen(false)}
+        footer={null}
+        width={960}
+      >
+        {modalLoading ? (
+          <div style={{ textAlign: 'center', padding: 80 }}>
+            <Spin tip="加载 K 线中..." />
+          </div>
+        ) : modalKlines.length > 0 ? (
+          <KlineChart klines={modalKlines} height={500} />
+        ) : (
+          <Empty description="暂无 K 线数据" />
+        )}
+      </Modal>
     </div>
   );
 }

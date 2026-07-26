@@ -25,9 +25,12 @@ JWT_EXPIRE_HOURS = 24
 
 # ============ 应用 ============
 APP_NAME = "QuantTerminal"
-APP_VERSION = "0.3.1"
+APP_VERSION = "0.4.0"
 APP_HOST = "127.0.0.1"
-APP_PORT = 8000
+APP_PORT = 8001
+
+# trader-finance-hub 后端（实时行情源/全市场数据）
+TFH_BASE_URL = "http://127.0.0.1:8000"
 
 # ============ A股规则 ============
 COMMISSION_RATE = 0.0003

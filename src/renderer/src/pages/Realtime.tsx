@@ -7,13 +7,15 @@
 import { useEffect, useState } from 'react';
 import {
   Card, Row, Col, Typography, Tag, Button, Space, Statistic, Select, message,
-  Alert, Descriptions, Empty,
+  Alert, Descriptions, Empty, Tabs, Input, Table, Badge, Radio,
 } from 'antd';
 import {
-  ReloadOutlined, SearchOutlined, StockOutlined,
+  ReloadOutlined, SearchOutlined, StockOutlined, ThunderboltOutlined,
+  ApiOutlined, ClockCircleOutlined,
 } from '@ant-design/icons';
 import ReactECharts from 'echarts-for-react';
 import { realtimeApi, stocksApi } from '../services/api';
+import KlineChart from '../components/KlineChart';
 
 const { Title } = Typography;
 
@@ -81,6 +83,80 @@ interface StockOption {
   name: string;
 }
 
+// ============ 通达信实时行情（eltdx 协议） ============
+interface TfhubHealth {
+  available: boolean;
+  healthy?: boolean;
+  sample_code?: string;
+  sample_price?: number;
+  message?: string;
+  error?: string;
+}
+
+interface TfhubQuoteItem {
+  code: string;
+  original_code: string;
+  price: number;
+  change: number;
+  change_pct: number;
+  open: number;
+  high: number;
+  low: number;
+  volume: number;   // 单位：手
+  amount: number;
+  inside: number;
+  outer: number;
+}
+
+interface TfhubQuoteResp {
+  available: boolean;
+  requested?: number;
+  returned?: number;
+  quotes?: TfhubQuoteItem[];
+  missing?: string[];
+  error?: string;
+}
+
+interface TfhubMinutePoint {
+  time_label: string;
+  price: number;
+  avg_price: number;
+  volume: number;
+}
+
+interface TfhubMinuteResp {
+  available: boolean;
+  code?: string;
+  status?: string;
+  trading_date?: string;
+  prev_close?: number;
+  open_price?: number;
+  avg_price?: number;
+  error_message?: string;
+  points?: TfhubMinutePoint[];
+  error?: string;
+}
+
+interface TfhubAuctionPoint {
+  time_label: string;
+  price: number;
+  matched_volume: number;
+  unmatched_volume: number;
+  matched_amount: number;
+}
+
+interface TfhubAuctionResp {
+  available: boolean;
+  code?: string;
+  status?: string;
+  last_price?: number;
+  last_matched_volume?: number;
+  total_amount?: number;
+  error_message?: string;
+  points?: TfhubAuctionPoint[];
+  error?: string;
+}
+
 // ============ 常量 ============
 const BOARD_LABEL: Record<string, string> = {
   main: '主板',
@@ -100,6 +176,78 @@ export default function Realtime() {
   const [notFound, setNotFound] = useState(false);
   const [stockOptions, setStockOptions] = useState<StockOption[]>([]);
   const [stockSearchLoading, setStockSearchLoading] = useState(false);
+
+  // ============ 通达信实时行情 state ============
+  const [tfhubHealth, setTfhubHealth] = useState<TfhubHealth | null>(null);
+  const [tfhubQuoteInput, setTfhubQuoteInput] = useState<string>('600170,000001,601868,300750');
+  const [tfhubQuoteResp, setTfhubQuoteResp] = useState<TfhubQuoteResp | null>(null);
+  const [tfhubQuoteLoading, setTfhubQuoteLoading] = useState(false);
+  const [tfhubMinute, setTfhubMinute] = useState<TfhubMinuteResp | null>(null);
+  const [tfhubMinuteLoading, setTfhubMinuteLoading] = useState(false);
+  const [tfhubAuction, setTfhubAuction] = useState<TfhubAuctionResp | null>(null);
+  const [tfhubAuctionLoading, setTfhubAuctionLoading] = useState(false);
+  const [klineEngine, setKlineEngine] = useState<'lightweight' | 'echarts'>('lightweight');
+
+  const fetchTfhubHealth = async () => {
+    try {
+      const { data: res } = await realtimeApi.tfhubHealth();
+      setTfhubHealth(res);
+    } catch (err: any) {
+      setTfhubHealth({ available: false, error: err?.response?.data?.detail || '检查失败' });
+    }
+  };
+
+  const fetchTfhubQuote = async () => {
+    const codes = tfhubQuoteInput
+      .split(/[,，\s]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (codes.length === 0) {
+      message.warning('请输入至少一个股票代码');
+      return;
+    }
+    setTfhubQuoteLoading(true);
+    try {
+      const { data: res } = await realtimeApi.tfhubQuote(codes);
+      setTfhubQuoteResp(res);
+      if (res.error) message.error(res.error);
+      else message.success(`请求 ${res.requested} 只 / 返回 ${res.returned} 只`);
+    } catch (err: any) {
+      message.error(err?.response?.data?.detail || '行情获取失败');
+    } finally {
+      setTfhubQuoteLoading(false);
+    }
+  };
+
+  const fetchTfhubMinute = async (c: string) => {
+    setTfhubMinuteLoading(true);
+    try {
+      const { data: res } = await realtimeApi.tfhubMinute(c);
+      setTfhubMinute(res);
+      if (res.error) message.error(res.error);
+    } catch (err: any) {
+      message.error(err?.response?.data?.detail || '分时获取失败');
+    } finally {
+      setTfhubMinuteLoading(false);
+    }
+  };
+
+  const fetchTfhubAuction = async (c: string) => {
+    setTfhubAuctionLoading(true);
+    try {
+      const { data: res } = await realtimeApi.tfhubAuction(c);
+      setTfhubAuction(res);
+      if (res.error) message.error(res.error);
+    } catch (err: any) {
+      message.error(err?.response?.data?.detail || '竞价获取失败');
+    } finally {
+      setTfhubAuctionLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTfhubHealth();
+  }, []);
 
   const fetchData = async (c: string) => {
     setLoading(true);
@@ -156,7 +304,14 @@ export default function Realtime() {
 
   return (
     <div style={{ padding: 20 }}>
-      <Card loading={loading && !data}>
+      <Tabs
+        defaultActiveKey="daily"
+        items={[
+          {
+            key: 'daily',
+            label: <span><StockOutlined /> 日K分析</span>,
+            children: (
+              <Card loading={loading && !data}>
         <Space style={{ marginBottom: 16, justifyContent: 'space-between', width: '100%' }}>
           <Title level={4} style={{ margin: 0 }}>
             <StockOutlined /> 实时行情分析
@@ -483,12 +638,21 @@ export default function Realtime() {
             </Row>
 
             {/* K 线图 */}
-            <Card size="small" title="近 60 日 K 线">
+            <Card size="small" title="近 60 日 K 线" extra={
+              <Radio.Group value={klineEngine} onChange={(e) => setKlineEngine(e.target.value)} size="small">
+                <Radio.Button value="lightweight">Lightweight Charts</Radio.Button>
+                <Radio.Button value="echarts">ECharts</Radio.Button>
+              </Radio.Group>
+            }>
               {data.klines && data.klines.length > 0 ? (
-                <ReactECharts
-                  option={buildKLineOption(data.klines)}
-                  style={{ height: 480 }}
-                />
+                klineEngine === 'lightweight' ? (
+                  <KlineChart klines={data.klines} height={480} />
+                ) : (
+                  <ReactECharts
+                    option={buildKLineOption(data.klines)}
+                    style={{ height: 480 }}
+                  />
+                )
               ) : (
                 <Empty description="暂无 K 线数据" />
               )}
@@ -500,8 +664,164 @@ export default function Realtime() {
           <Empty description="请选择股票查看深度分析" />
         )}
       </Card>
+            ),
+          },
+          {
+            key: 'tfhub',
+            label: <span><ApiOutlined /> 通达信实时 <Badge dot={tfhubHealth?.healthy === true} status={tfhubHealth?.healthy ? 'success' : 'error'} /></span>,
+            children: (
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <Card size="small" title={<span><ApiOutlined /> 行情源健康</span>} extra={<Button size="small" icon={<ReloadOutlined />} onClick={fetchTfhubHealth}>刷新</Button>}>
+                  {tfhubHealth ? (
+                    tfhubHealth.available ? (
+                      <Space>
+                        <Badge status={tfhubHealth.healthy ? 'success' : 'warning'} />
+                        <Typography.Text>{tfhubHealth.message || '未知'}</Typography.Text>
+                        {tfhubHealth.sample_code && (
+                          <Typography.Text type="secondary">
+                            样本 {tfhubHealth.sample_code} 现价 <strong style={{ fontFamily: 'monospace' }}>{tfhubHealth.sample_price?.toFixed(2)}</strong>
+                          </Typography.Text>
+                        )}
+                      </Space>
+                    ) : (
+                      <Alert type="error" showIcon message="eltdx 不可用" description={tfhubHealth.error} />
+                    )
+                  ) : (
+                    <Typography.Text type="secondary">检查中...</Typography.Text>
+                  )}
+                </Card>
+
+                <Card size="small" title={<span><ThunderboltOutlined /> 批量行情快照</span>}>
+                  <Space.Compact style={{ width: '100%', marginBottom: 12 }}>
+                    <Input
+                      value={tfhubQuoteInput}
+                      onChange={(e) => setTfhubQuoteInput(e.target.value)}
+                      placeholder="股票代码，逗号分隔，如 600170,000001,sh601868,300750"
+                      onPressEnter={fetchTfhubQuote}
+                    />
+                    <Button type="primary" icon={<ThunderboltOutlined />} loading={tfhubQuoteLoading} onClick={fetchTfhubQuote}>
+                      拉取行情
+                    </Button>
+                  </Space.Compact>
+                  {tfhubQuoteResp && tfhubQuoteResp.quotes && tfhubQuoteResp.quotes.length > 0 && (
+                    <Table
+                      size="small"
+                      rowKey={(r) => r.code}
+                      dataSource={tfhubQuoteResp.quotes}
+                      pagination={false}
+                      columns={[
+                        { title: '代码', dataIndex: 'original_code', width: 100, render: (v: string) => <strong style={{ fontFamily: 'monospace' }}>{v}</strong> },
+                        { title: '现价', dataIndex: 'price', width: 80, align: 'right' as const, render: (v: number) => <strong style={{ fontFamily: 'monospace' }}>{v.toFixed(2)}</strong> },
+                        {
+                          title: '涨跌', dataIndex: 'change', width: 80, align: 'right' as const,
+                          render: (v: number) => <span style={{ fontFamily: 'monospace', color: v >= 0 ? UP : DOWN }}>{v >= 0 ? '+' : ''}{v.toFixed(2)}</span>,
+                        },
+                        {
+                          title: '涨跌幅', dataIndex: 'change_pct', width: 90, align: 'right' as const,
+                          render: (v: number) => <span style={{ fontFamily: 'monospace', color: v >= 0 ? UP : DOWN }}>{v >= 0 ? '+' : ''}{v.toFixed(2)}%</span>,
+                        },
+                        { title: '开盘', dataIndex: 'open', width: 80, align: 'right' as const, render: (v: number) => v.toFixed(2) },
+                        { title: '最高', dataIndex: 'high', width: 80, align: 'right' as const, render: (v: number) => <span style={{ color: UP }}>{v.toFixed(2)}</span> },
+                        { title: '最低', dataIndex: 'low', width: 80, align: 'right' as const, render: (v: number) => <span style={{ color: DOWN }}>{v.toFixed(2)}</span> },
+                        { title: '成交量(手)', dataIndex: 'volume', width: 110, align: 'right' as const, render: (v: number) => v.toLocaleString() },
+                        { title: '成交额', dataIndex: 'amount', width: 130, align: 'right' as const, render: (v: number) => (v / 1e8).toFixed(2) + ' 亿' },
+                        {
+                          title: '操作', width: 130, render: (_: unknown, r: TfhubQuoteItem) => (
+                            <Space size="small">
+                              <Button size="small" type="link" icon={<ClockCircleOutlined />} loading={tfhubMinuteLoading} onClick={() => fetchTfhubMinute(r.original_code)}>分时</Button>
+                              <Button size="small" type="link" loading={tfhubAuctionLoading} onClick={() => fetchTfhubAuction(r.original_code)}>竞价</Button>
+                            </Space>
+                          ),
+                        },
+                      ]}
+                    />
+                  )}
+                  {tfhubQuoteResp && tfhubQuoteResp.missing && tfhubQuoteResp.missing.length > 0 && (
+                    <Alert type="warning" showIcon style={{ marginTop: 8 }} message={`未返回的代码：${tfhubQuoteResp.missing.join(', ')}`} />
+                  )}
+                </Card>
+
+                {tfhubMinute && (
+                  <Card size="small" title={<span><ClockCircleOutlined /> 分时数据 {tfhubMinute.code ? `(${tfhubMinute.code})` : ''}</span>}>
+                    {tfhubMinute.error ? (
+                      <Alert type="error" showIcon message={tfhubMinute.error} />
+                    ) : tfhubMinute.points && tfhubMinute.points.length > 0 ? (
+                      <ReactECharts option={buildMinuteOption(tfhubMinute.points)} style={{ height: 360 }} />
+                    ) : (
+                      <Empty description="无分时数据" />
+                    )}
+                  </Card>
+                )}
+
+                {tfhubAuction && (
+                  <Card size="small" title={<span>集合竞价 {tfhubAuction.code ? `(${tfhubAuction.code})` : ''}</span>}>
+                    {tfhubAuction.error ? (
+                      <Alert type="error" showIcon message={tfhubAuction.error} />
+                    ) : tfhubAuction.status === 'success' && tfhubAuction.points && tfhubAuction.points.length > 0 ? (
+                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                        <Space>
+                          <Typography.Text>最新价：<strong style={{ fontFamily: 'monospace' }}>{tfhubAuction.last_price?.toFixed(2)}</strong></Typography.Text>
+                          <Typography.Text>匹配量：<strong style={{ fontFamily: 'monospace' }}>{tfhubAuction.last_matched_volume?.toLocaleString()}</strong></Typography.Text>
+                          <Typography.Text>总金额：<strong style={{ fontFamily: 'monospace' }}>{tfhubAuction.total_amount?.toLocaleString()}</strong></Typography.Text>
+                        </Space>
+                        <Table
+                          size="small"
+                          rowKey={(r) => r.time_label}
+                          dataSource={tfhubAuction.points}
+                          pagination={false}
+                          columns={[
+                            { title: '时间', dataIndex: 'time_label', width: 80 },
+                            { title: '价格', dataIndex: 'price', width: 80, align: 'right' as const, render: (v: number) => v.toFixed(2) },
+                            { title: '匹配量', dataIndex: 'matched_volume', width: 110, align: 'right' as const, render: (v: number) => v?.toLocaleString() },
+                            { title: '未匹配量', dataIndex: 'unmatched_volume', width: 110, align: 'right' as const, render: (v: number) => v?.toLocaleString() },
+                            { title: '匹配金额', dataIndex: 'matched_amount', width: 130, align: 'right' as const, render: (v: number) => v?.toFixed(0) },
+                          ]}
+                        />
+                      </Space>
+                    ) : (
+                      <Alert type="info" showIcon message={tfhubAuction.error_message || '无集合竞价数据（非竞价时段）'} />
+                    )}
+                  </Card>
+                )}
+              </Space>
+            ),
+          },
+        ]}
+      />
     </div>
   );
+}
+
+// ============ 分时图配置 ============
+function buildMinuteOption(points: TfhubMinutePoint[]) {
+  const times = points.map((p) => p.time_label);
+  const prices = points.map((p) => p.price);
+  const avgPrices = points.map((p) => p.avg_price);
+  const volumes = points.map((p) => p.volume);
+  return {
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['价格', '均价'] },
+    grid: [
+      { left: 60, right: 30, top: 30, height: '60%' },
+      { left: 60, right: 30, top: '76%', height: '16%' },
+    ],
+    xAxis: [
+      { type: 'category', data: times, scale: true, boundaryGap: false, axisLabel: { fontSize: 10 } },
+      { type: 'category', gridIndex: 1, data: times, axisLabel: { show: false } },
+    ],
+    yAxis: [
+      { scale: true, axisLabel: { fontSize: 10 }, splitLine: { show: false } },
+      { scale: true, gridIndex: 1, axisLabel: { show: false }, splitNumber: 2 },
+    ],
+    dataZoom: [
+      { type: 'inside', xAxisIndex: [0, 1], start: 0, end: 100 },
+    ],
+    series: [
+      { name: '价格', type: 'line', data: prices, showSymbol: false, lineStyle: { color: '#1677ff', width: 1 } },
+      { name: '均价', type: 'line', data: avgPrices, showSymbol: false, lineStyle: { color: '#cf1322', width: 1, type: 'dashed' } },
+      { name: '成交量', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: volumes, itemStyle: { color: 'rgba(22,119,255,0.4)' } },
+    ],
+  };
 }
 
 // ============ K 线图配置 ============
