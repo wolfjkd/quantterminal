@@ -31,6 +31,12 @@ class SyncBarsRequest(BaseModel):
     fqt: int = 1  # 0=不复权 1=前复权 2=后复权
 
 
+class SyncAllBarsRequest(BaseModel):
+    beg_date: str = ""  # YYYYMMDD，默认 1 年前
+    end_date: str = ""  # YYYYMMDD，默认今天
+    fqt: int = 1  # 0=不复权 1=前复权 2=后复权
+
+
 @router.get("/logs")
 def sync_logs(
     page: int = 1,
@@ -95,6 +101,25 @@ def sync_stocks(
     res = sync_service.sync_stock_list(db, user_id=user.id)
     if not res.get("success", False):
         raise HTTPException(status_code=400, detail=res.get("message", "扩容失败"))
+    return res
+
+
+@router.post("/bars-all")
+def sync_bars_all(
+    req: SyncAllBarsRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """批量同步所有股票的K线数据"""
+    res = sync_service.sync_all_bars(
+        db,
+        beg_date=req.beg_date,
+        end_date=req.end_date,
+        fqt=req.fqt,
+        user_id=user.id,
+    )
+    if not res.get("success", False) and res.get("total", 0) == 0:
+        raise HTTPException(status_code=400, detail=res.get("message", "批量同步失败"))
     return res
 
 

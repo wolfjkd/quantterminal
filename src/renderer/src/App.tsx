@@ -1,28 +1,21 @@
 /** QuantTerminal 根组件
  *
- * 路由结构：
+ * 路由结构（精简版 13 个模块）：
  *   /login         → Login（公开）
- *   /              → MainLayout（受保护，含侧边栏 20 模块）
- *     ├─ /dashboard
- *     ├─ /decision
- *     ├─ /compare
- *     ├─ /workbench
- *     ├─ /radar
- *     ├─ /stocks
- *     ├─ /watchlists
- *     ├─ /portfolios
- *     ├─ /backtest
- *     ├─ /strategies
- *     ├─ /factors
- *     ├─ /screener
- *     ├─ /realtime
- *     ├─ /market
- *     ├─ /sync
- *     ├─ /trade-plans
- *     ├─ /trade-notes
- *     ├─ /settings (admin)
- *     ├─ /audit    (admin)
- *     └─ /about
+ *   /              → MainLayout（受保护，含侧边栏）
+ *     ├─ /dashboard    总览
+ *     ├─ /sync         行情同步
+ *     ├─ /stocks       股票池
+ *     ├─ /watchlists   自选股
+ *     ├─ /portfolios   投资组合
+ *     ├─ /backtest     回测中心
+ *     ├─ /strategies   策略管理
+ *     ├─ /factors      因子中心
+ *     ├─ /screener     条件选股
+ *     ├─ /realtime     实时分析
+ *     ├─ /trade-plans  交易计划
+ *     ├─ /trade-notes  交易笔记
+ *     └─ /settings     系统设置
  */
 import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -32,12 +25,8 @@ import Login from './pages/Login';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useAuth } from './services/authStore';
 
-// 懒加载所有页面（menu.tsx 内已用 lazy，但路由级别仍需直接引用以绑定 Route）
+// 懒加载保留的页面
 const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Decision = lazy(() => import('./pages/Decision'));
-const Compare = lazy(() => import('./pages/Compare'));
-const Workbench = lazy(() => import('./pages/Workbench'));
-const Radar = lazy(() => import('./pages/Radar'));
 const Stocks = lazy(() => import('./pages/Stocks'));
 const Watchlists = lazy(() => import('./pages/Watchlists'));
 const Portfolios = lazy(() => import('./pages/Portfolios'));
@@ -51,8 +40,6 @@ const Sync = lazy(() => import('./pages/Sync'));
 const TradePlans = lazy(() => import('./pages/TradePlans'));
 const TradeNotes = lazy(() => import('./pages/TradeNotes'));
 const Settings = lazy(() => import('./pages/Settings'));
-const Audit = lazy(() => import('./pages/Audit'));
-const About = lazy(() => import('./pages/About'));
 
 const PageLoading = () => (
   <div style={{ padding: 40, textAlign: 'center' }}>
@@ -85,38 +72,6 @@ const App = () => {
             element={
               <Suspense fallback={<PageLoading />}>
                 <Dashboard />
-              </Suspense>
-            }
-          />
-          <Route
-            path="decision"
-            element={
-              <Suspense fallback={<PageLoading />}>
-                <Decision />
-              </Suspense>
-            }
-          />
-          <Route
-            path="compare"
-            element={
-              <Suspense fallback={<PageLoading />}>
-                <Compare />
-              </Suspense>
-            }
-          />
-          <Route
-            path="workbench"
-            element={
-              <Suspense fallback={<PageLoading />}>
-                <Workbench />
-              </Suspense>
-            }
-          />
-          <Route
-            path="radar"
-            element={
-              <Suspense fallback={<PageLoading />}>
-                <Radar />
               </Suspense>
             }
           />
@@ -221,22 +176,6 @@ const App = () => {
             element={
               <Suspense fallback={<PageLoading />}>
                 <Settings />
-              </Suspense>
-            }
-          />
-          <Route
-            path="audit"
-            element={
-              <Suspense fallback={<PageLoading />}>
-                <Audit />
-              </Suspense>
-            }
-          />
-          <Route
-            path="about"
-            element={
-              <Suspense fallback={<PageLoading />}>
-                <About />
               </Suspense>
             }
           />

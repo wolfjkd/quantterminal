@@ -9,7 +9,7 @@
 设计要点：
   - onefile 模式：单 exe，启动稍慢但分发简单
   - 显式 hidden-imports：避免 PyInstaller 漏掉动态导入的 router/service
-  - 不包含 trader-finance-hub 源码（打包后 tfhub_service 自动降级）
+  - 不包含 tradex-hub 源码（打包后 tfhub_service 自动降级）
   - 不包含 quantengine/quantcore 源码路径（用 pip 安装版本）
 """
 import subprocess

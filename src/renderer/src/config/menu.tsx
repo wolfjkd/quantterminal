@@ -1,10 +1,6 @@
-/** 侧边栏菜单配置：20 个业务模块 */
+/** 侧边栏菜单配置：精简版 13 个业务模块 */
 import {
   DashboardOutlined,
-  ThunderboltOutlined,
-  SwapOutlined,
-  ToolOutlined,
-  RadarChartOutlined,
   StockOutlined,
   StarOutlined,
   WalletOutlined,
@@ -13,13 +9,10 @@ import {
   FundProjectionScreenOutlined,
   FilterOutlined,
   LineChartOutlined,
-  GlobalOutlined,
   CloudSyncOutlined,
   SettingOutlined,
-  AuditOutlined,
   AimOutlined,
   FileTextOutlined,
-  AppstoreOutlined,
 } from '@ant-design/icons';
 import type { ReactNode } from 'react';
 
@@ -40,28 +33,10 @@ export const MENU_ITEMS: MenuItem[] = [
     label: '总览',
   },
   {
-    key: 'decision',
-    path: '/decision',
-    icon: <ThunderboltOutlined />,
-    label: '操盘台',
-  },
-  {
-    key: 'compare',
-    path: '/compare',
-    icon: <SwapOutlined />,
-    label: '双核对比',
-  },
-  {
-    key: 'workbench',
-    path: '/workbench',
-    icon: <ToolOutlined />,
-    label: '量化工作台',
-  },
-  {
-    key: 'radar',
-    path: '/radar',
-    icon: <RadarChartOutlined />,
-    label: '市场雷达',
+    key: 'sync',
+    path: '/sync',
+    icon: <CloudSyncOutlined />,
+    label: '行情同步',
   },
   {
     key: 'stocks',
@@ -112,18 +87,6 @@ export const MENU_ITEMS: MenuItem[] = [
     label: '实时分析',
   },
   {
-    key: 'market',
-    path: '/market',
-    icon: <GlobalOutlined />,
-    label: '全A动向',
-  },
-  {
-    key: 'sync',
-    path: '/sync',
-    icon: <CloudSyncOutlined />,
-    label: '行情同步',
-  },
-  {
     key: 'trade-plan',
     path: '/trade-plans',
     icon: <AimOutlined />,
@@ -141,18 +104,5 @@ export const MENU_ITEMS: MenuItem[] = [
     icon: <SettingOutlined />,
     label: '系统设置',
     adminOnly: true,
-  },
-  {
-    key: 'audit',
-    path: '/audit',
-    icon: <AuditOutlined />,
-    label: '审计日志',
-    adminOnly: true,
-  },
-  {
-    key: 'about',
-    path: '/about',
-    icon: <AppstoreOutlined />,
-    label: '关于',
   },
 ];

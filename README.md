@@ -1,4 +1,6 @@
-# QuantTerminal
+﻿# QuantTerminal
+
+> **⚠️ 不再维护更新，已并入 TradeX**
 
 <p align="center">
   <strong>一站式个人量化研究平台 · Electron + React + FastAPI</strong><br/>
@@ -57,7 +59,7 @@ quantterminal/
 
 - **前端**: React 18 + TypeScript + Vite
 - **桌面框架**: Electron 31
-- **后端**: FastAPI (端口 8001，避免与 trader-finance-hub 8000 冲突)
+- **后端**: FastAPI (端口 8001，避免与 tradex-hub 8000 冲突)
 - **图表**: ECharts + Lightweight Charts（K 线专用高性能库）
 - **UI**: Ant Design
 - **测试**: Vitest + @testing-library/react
@@ -70,7 +72,7 @@ quantterminal/
 4. **条件选股**: 多条件组合筛选、5类30+条件、AND 逻辑组合 🆕 v0.2.0
 5. **因子中心**: 因子库管理、自定义权重、IC 分析 🆕 v0.2.0
 6. **20 业务模块**: 操盘台/双核对比/工作台/雷达/股票池/自选股/组合/行情同步/审计日志等 🆕 v0.3.0
-7. **通达信实时行情**: 集合竞价/分时/批量快照（eltdx 协议，接入 trader-finance-hub） 🆕 v0.4.0
+7. **通达信实时行情**: 集合竞价/分时/批量快照（eltdx 协议，接入 tradex-hub） 🆕 v0.4.0
 8. **K 线图组件**: Lightweight Charts 蜡烛图+成交量副图，支持缩放平移 🆕 v0.4.0
 
 ## 快速开始
@@ -93,7 +95,7 @@ npm run dev
 
 ## API 服务
 
-后端服务运行在 `http://localhost:8001`（trader-finance-hub 占用 8000）
+后端服务运行在 `http://localhost:8001`（tradex-hub 占用 8000）
 
 ### 可用接口
 
@@ -125,7 +127,7 @@ npm run build
 | 版本 | 发布日期 | 主要变更 |
 |------|---------|---------|
 | v0.4.1 | 2026-07-26 | 打包基础设施：PyInstaller 后端封装+环境变量支持+dev/prod 模式区分+NSIS 安装包（119MB） |
-| v0.4.0 | 2026-07-26 | 接入 trader-finance-hub 通达信实时行情+Lightweight Charts K线图+vitest前端单测+Electron NSIS打包 |
+| v0.4.0 | 2026-07-26 | 接入 tradex-hub 通达信实时行情+Lightweight Charts K线图+vitest前端单测+Electron NSIS打包 |
 | v0.3.1 | 2026-07-26 | 自查修复：workbench/prepare死端点改造+About页重写+阶段A/B/C/D标签清理+版本号同步 |
 | v0.3.0 | 2026-07-26 | 对标真实业务系统全面重做：20模块上线+行情同步接入+回测/因子/选股引擎完整集成 |
 | v0.2.1 | 2026-07-26 | 修复8个TS编译错误+回测中心29项指标补齐+ErrorBoundary容错+阶段4测试报告 |

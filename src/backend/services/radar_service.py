@@ -5,7 +5,7 @@
   - Compare：复用 signal_service 跑不同策略对比
   - Validate：用历史 K 线验证信号准确率（前向 N 日收益）
 
-如需联网拉取实时榜单，可后续接入 trader-finance-hub。
+如需联网拉取实时榜单，可后续接入 tradex-hub。
 """
 from __future__ import annotations
 
@@ -366,7 +366,7 @@ def validate_signals(
 def ingest_hot_stocks(db: Session, source: str = "gainers", limit: int = 25) -> Dict[str, Any]:
     """热股一键入库（基于本地数据识别候选）
 
-    如需联网拉取实时榜单，可后续接入 trader-finance-hub。
+    如需联网拉取实时榜单，可后续接入 tradex-hub。
     """
     radar = get_radar_overview(db, top_n=max(limit, 30))
     source_map = {

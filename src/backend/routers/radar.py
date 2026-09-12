@@ -32,7 +32,7 @@ def radar_overview(
     """全市场雷达：涨跌幅/成交额/换手榜单"""
     if live:
         return {
-            "message": "实时联网雷达暂未启用，可后续接入 trader-finance-hub",
+            "message": "实时联网雷达暂未启用，可后续接入 tradex-hub",
             "live": True,
             "fallback": radar_service.get_radar_overview(db, top_n),
         }

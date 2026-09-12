@@ -222,6 +222,12 @@ export const syncApi = {
     end_date?: string;  // YYYYMMDD，默认今天
     fqt?: number;       // 0=不复权 1=前复权 2=后复权
   }) => api.post('/sync/bars', payload),
+  // 批量同步所有股票K线
+  syncAllBars: (payload: {
+    beg_date?: string;
+    end_date?: string;
+    fqt?: number;
+  }) => api.post('/sync/bars-all', payload, { timeout: 600000 }),  // 10 分钟超时
   // 全市场股票列表扩容（东方财富 push2 clist）
   syncStocks: () => api.post('/sync/stocks', {}),
   // 实时报价快照（东方财富 push2 qt stock get）

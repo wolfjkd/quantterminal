@@ -134,37 +134,26 @@ def fetch_kline(
     return bars
 
 
-def fetch_kline_full(
+def _fetch_kline_eastmoney(
     code: str,
     beg: str = "19900101",
     end: Optional[str] = None,
     fqt: int = 1,
 ) -> Tuple[List[Dict[str, Any]], str, Optional[str]]:
-    """拉取日K线（内部接口，附带股票名称与错误信息）
-
-    Returns:
-        (bars, name, err)
-        bars: [{date, open, high, low, close, volume, amount, pct_change, pre_close, adj_factor}, ...]
-        name: 股票名称
-        err: 失败时返回错误信息字符串，成功时为 None
-    """
+    """通过东方财富 push2his 接口拉取日K线（备用方案）"""
     if end is None or end == "":
         end = date.today().strftime("%Y%m%d")
     secid = to_secid(code)
 
-    # 多模板兜底：先 beg/end 区间，再 lmt 模板
     templates = [
-        # 模板1：beg/end 区间
         f"/api/qt/stock/kline/get?secid={secid}&ut={UT}"
         f"&fields1=f1,f2,f3,f4,f5,f6"
         f"&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61"
         f"&klt=101&fqt={int(fqt)}&beg={beg}&end={end}&lmt=100000",
-        # 模板2：lmt 大数
         f"/api/qt/stock/kline/get?secid={secid}&ut={UT}"
         f"&fields1=f1,f2,f3,f4,f5,f6"
         f"&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61"
         f"&klt=101&fqt={int(fqt)}&end=20500101&lmt=1000",
-        # 模板3：无 ut
         f"/api/qt/stock/kline/get?secid={secid}"
         f"&fields1=f1,f2,f3,f4,f5,f6"
         f"&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61"
@@ -179,12 +168,11 @@ def fetch_kline_full(
         data = None
 
     if not data or not data.get("data") or not data["data"].get("klines"):
-        return [], "", f"行情接口无数据或网络不可达：{code}"
+        return [], "", f"东方财富接口无数据或网络不可达：{code}"
 
     name = data["data"].get("name", "") or ""
     klines = data["data"]["klines"]
 
-    # beg 归一化为 YYYY-MM-DD 用于过滤
     beg_norm = ""
     if beg and len(beg) == 8:
         beg_norm = f"{beg[0:4]}-{beg[4:6]}-{beg[6:8]}"
@@ -208,9 +196,7 @@ def fetch_kline_full(
         except (ValueError, IndexError):
             continue
 
-        # 修正：东财 K 线 vol 单位是手（百股），换算为股
         vol_shares = vol * 100 if vol > 0 else 0
-        # 数值合理性兜底
         if h < max(o, c):
             h = max(o, c)
         if low > min(o, c) or low <= 0:
@@ -238,13 +224,107 @@ def fetch_kline_full(
     return bars, name, None
 
 
+def fetch_kline_full(
+    code: str,
+    beg: str = "19900101",
+    end: Optional[str] = None,
+    fqt: int = 1,
+) -> Tuple[List[Dict[str, Any]], str, Optional[str]]:
+    """拉取日K线（内部接口，附带股票名称与错误信息）
+
+    优先使用通达信 eltdx TCP 协议（更稳定），失败后回退到东方财富 HTTP 接口。
+
+    Returns:
+        (bars, name, err)
+        bars: [{date, open, high, low, close, volume, amount, pct_change, pre_close, adj_factor}, ...]
+        name: 股票名称
+        err: 失败时返回错误信息字符串，成功时为 None
+    """
+    # ============ 优先：通达信 eltdx TCP 协议 ============
+    try:
+        from backend.services import tfhub_service
+        if tfhub_service.is_available():
+            result = tfhub_service.get_kline(code, period="day", count=500)
+            if result.get("status") == "success" and result.get("bars"):
+                name = result.get("code", code)
+                bars = result["bars"]
+                prev_close: Optional[float] = None
+                processed: List[Dict[str, Any]] = []
+                for b in bars:
+                    pre_close_val = prev_close if prev_close is not None else b["open"]
+                    pct = round((b["close"] - pre_close_val) / pre_close_val * 100, 4) if pre_close_val > 0 else 0.0
+                    processed.append({
+                        "date": b["date"],
+                        "open": round(b["open"], 4),
+                        "high": round(b["high"], 4),
+                        "low": round(b["low"], 4),
+                        "close": round(b["close"], 4),
+                        "volume": b["volume"],
+                        "amount": round(b["amount"], 2),
+                        "pre_close": round(pre_close_val, 4),
+                        "pct_change": pct,
+                        "adj_factor": 1.0,
+                    })
+                    prev_close = b["close"]
+                if processed:
+                    return processed, name, None
+    except Exception:
+        pass
+
+    # ============ 兜底：东方财富 HTTP 接口 ============
+    return _fetch_kline_eastmoney(code, beg=beg, end=end, fqt=fqt)
+
+
 def fetch_stock_list() -> Tuple[List[Dict[str, Any]], Optional[str]]:
     """拉取沪深A股全市场列表
+
+    优先使用 eltdx TCP 协议（稳定可靠，可获取 5000+ 只股票代码），
+    失败后回退到东方财富 HTTP 接口。
 
     Returns:
         (rows, err)
         rows: [{code, symbol, name, market, board, is_st, industry}, ...]
     """
+    # ============ 优先：eltdx TCP 协议 ============
+    try:
+        from backend.services import tfhub_service
+        if tfhub_service.is_available():
+            result = tfhub_service.get_stock_list()
+            if result.get("available") and result.get("count", 0) > 0:
+                codes = result.get("codes", [])
+                out: List[Dict[str, Any]] = []
+                for code in codes:
+                    # 代码格式：sh600000 / sz000001
+                    code = code.strip().lower()
+                    if code.startswith("sh") and len(code) == 8:
+                        symbol = code[2:]
+                        market = "SH"
+                    elif code.startswith("sz") and len(code) == 8:
+                        symbol = code[2:]
+                        market = "SZ"
+                    elif code.startswith("bj") and len(code) == 8:
+                        symbol = code[2:]
+                        market = "BJ"
+                    else:
+                        continue
+                    if not symbol.isdigit():
+                        continue
+                    full_code = f"{symbol}.{market}"
+                    out.append({
+                        "code": full_code,
+                        "symbol": symbol,
+                        "name": "",  # eltdx 只返回代码，名称需要后续补充
+                        "market": market,
+                        "board": detect_board(full_code),
+                        "is_st": 0,
+                        "industry": "",
+                    })
+                if out:
+                    return out, None
+    except Exception:
+        pass
+
+    # ============ 兜底：东方财富 HTTP 接口 ============
     path = (
         "/api/qt/clist/get?pn=1&pz=10000&po=1&np=1"
         "&ut=bd1d9ddb04089700cf9c27f6f7426281"

@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import {
   Card, Row, Col, Typography, Tag, Button, Space, Statistic, Table, Empty,
   Tabs, Form, Select, DatePicker, AutoComplete, message, Alert, Descriptions,
-  Spin,
+  Spin, Divider,
 } from 'antd';
 import {
   ReloadOutlined, ThunderboltOutlined, DatabaseOutlined, SyncOutlined,
@@ -253,6 +253,15 @@ function HealthTab() {
 
 // ============ Tab 2: 同步行情 ============
 
+interface BatchSyncResult {
+  success: boolean;
+  total: number;
+  success_count: number;
+  fail_count: number;
+  imported_total: number;
+  message: string;
+}
+
 function BarsTab() {
   const [form] = Form.useForm();
   const [stockOptions, setStockOptions] = useState<StockOption[]>([]);
@@ -261,6 +270,8 @@ function BarsTab() {
   const [result, setResult] = useState<SyncBarsResult | null>(null);
   const [runningStocks, setRunningStocks] = useState(false);
   const [stocksResult, setStocksResult] = useState<SyncStocksResult | null>(null);
+  const [batchRunning, setBatchRunning] = useState(false);
+  const [batchResult, setBatchResult] = useState<BatchSyncResult | null>(null);
 
   // 默认 1 年前到今天
   const defaultBeg = dayjs().subtract(1, 'year');
@@ -319,6 +330,25 @@ function BarsTab() {
     }
   };
 
+  const onSyncAllBars = async () => {
+    try {
+      setBatchRunning(true);
+      setBatchResult(null);
+      const { data: res } = await syncApi.syncAllBars({});
+      setBatchResult(res);
+      if (res.success) {
+        message.success(res.message || '全量同步完成');
+      } else {
+        message.warning(res.message || '全量同步部分失败');
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || '全量同步失败';
+      message.error(msg);
+    } finally {
+      setBatchRunning(false);
+    }
+  };
+
   return (
     <Card>
       <Title level={4} style={{ marginBottom: 16 }}>
@@ -328,10 +358,50 @@ function BarsTab() {
       <Alert
         type="info"
         showIcon
-        message="东方财富 push2his 接口"
-        description="通过 HTTP 直接调用东方财富公开接口拉取日K线，写入本地 SQLite。支持前复权/后复权/不复权。如需扩容股票池，先点「全市场扩容」。"
+        message="数据同步说明"
+        description={
+          <div>
+            <p style={{ margin: 0 }}>
+              <strong>推荐流程：</strong>先点「全市场扩容股票池」→ 再点「一键同步全部K线」
+            </p>
+            <p style={{ margin: '4px 0 0' }}>
+              单只股票同步用于临时补充数据，全量同步会遍历股票池中所有股票批量拉取。
+            </p>
+          </div>
+        }
         style={{ marginBottom: 16 }}
       />
+
+      {/* 全量同步按钮区域 */}
+      <Card
+        size="small"
+        style={{ marginBottom: 16, background: '#f6ffed', border: '1px solid #b7eb8f' }}
+      >
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Space>
+            <Tag color="green" style={{ fontSize: 14 }}>推荐</Tag>
+            <Text strong>一键同步全部股票K线</Text>
+          </Space>
+          <Space>
+            <Button
+              type="primary"
+              size="large"
+              icon={<SyncOutlined spin={batchRunning} />}
+              onClick={onSyncAllBars}
+              loading={batchRunning}
+              danger
+            >
+              {batchRunning ? '全量同步中，请耐心等待...' : '🚀 一键同步全部K线'}
+            </Button>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              首次使用请先点「全市场扩容股票池」
+            </Text>
+          </Space>
+        </Space>
+      </Card>
+
+      {/* 单只股票同步区域 */}
+      <Divider>单只股票同步（补充数据用）</Divider>
 
       <Form
         form={form}
@@ -388,7 +458,7 @@ function BarsTab() {
             onClick={onSyncBars}
             loading={running}
           >
-            {running ? '同步中...' : '开始同步 K 线'}
+            {running ? '同步中...' : '同步单只 K 线'}
           </Button>
           <Button
             icon={<DatabaseOutlined />}
@@ -400,7 +470,49 @@ function BarsTab() {
         </Space>
       </Form>
 
-      {/* 同步结果 */}
+      {/* 全量同步进度 */}
+      {batchRunning && (
+        <Card size="small" style={{ marginBottom: 16, marginTop: 8 }}>
+          <Spin tip="正在批量同步所有股票K线，可能需要几分钟...">
+            <div style={{ height: 60 }} />
+          </Spin>
+        </Card>
+      )}
+
+      {/* 全量同步结果 */}
+      {batchResult && !batchRunning && (
+        <Card
+          size="small"
+          title="全量同步结果"
+          style={{ marginBottom: 16, marginTop: 8 }}
+        >
+          <Descriptions column={2} size="small" bordered>
+            <Descriptions.Item label="总股票数">
+              <span style={{ fontFamily: 'monospace' }}>{batchResult.total}</span>
+            </Descriptions.Item>
+            <Descriptions.Item label="成功">
+              <span style={{ fontFamily: 'monospace', color: '#52c41a' }}>
+                {batchResult.success_count}
+              </span>
+            </Descriptions.Item>
+            <Descriptions.Item label="失败">
+              <span style={{ fontFamily: 'monospace', color: batchResult.fail_count > 0 ? '#f5222d' : '#52c41a' }}>
+                {batchResult.fail_count}
+              </span>
+            </Descriptions.Item>
+            <Descriptions.Item label="导入K线总数">
+              <span style={{ fontFamily: 'monospace', color: '#1890ff' }}>
+                {batchResult.imported_total}
+              </span>
+            </Descriptions.Item>
+            <Descriptions.Item label="说明" span={2}>
+              {batchResult.message}
+            </Descriptions.Item>
+          </Descriptions>
+        </Card>
+      )}
+
+      {/* 单只同步结果 */}
       {running && (
         <Card size="small" style={{ marginBottom: 16, marginTop: 8 }}>
           <Spin tip="正在拉取行情数据，请稍候...">
@@ -409,8 +521,8 @@ function BarsTab() {
         </Card>
       )}
 
-      {result && (
-        <Card size="small" title="同步结果" style={{ marginBottom: 16, marginTop: 8 }}>
+      {result && !batchRunning && (
+        <Card size="small" title="单股同步结果" style={{ marginBottom: 16, marginTop: 8 }}>
           <Descriptions column={2} size="small" bordered>
             <Descriptions.Item label="股票代码">
               <strong style={{ fontFamily: 'monospace' }}>{result.code}</strong>

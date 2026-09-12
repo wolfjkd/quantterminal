@@ -37,7 +37,7 @@ APP_HOST = "127.0.0.1"
 # 端口：优先用环境变量（打包后由 Electron 主进程传入，避免冲突）
 APP_PORT = int(os.environ.get("QT_BACKEND_PORT", "8001"))
 
-# trader-finance-hub 后端（实时行情源/全市场数据）
+# tradex-hub 后端（实时行情源/全市场数据）
 TFH_BASE_URL = "http://127.0.0.1:8000"
 
 # ============ A股规则 ============

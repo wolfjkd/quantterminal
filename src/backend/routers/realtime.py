@@ -78,3 +78,20 @@ def tfhub_minute(
 ):
     """分时数据（eltdx 独有）"""
     return tfhub_service.get_minute(code)
+
+
+@router.get("/tfhub/kline/{code}")
+def tfhub_kline(
+    code: str,
+    period: str = "day",
+    count: int = 500,
+    user: User = Depends(get_current_user),
+):
+    """K线数据（通达信 TCP 协议，替代东方财富 HTTP 接口）
+
+    Args:
+        code: 股票代码（任意格式）
+        period: K线周期，"day" / "week" / "month" / "5m" / "15m" / "30m" / "60m"
+        count: 返回 K 线根数（默认 500）
+    """
+    return tfhub_service.get_kline(code, period=period, count=count)

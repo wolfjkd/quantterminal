@@ -147,7 +147,7 @@ def run(
             source="manual",
             code=stock.code,
             status="success",
-            message=msg + "（嵌入式终端未接实时源，请用 trader-finance-hub 同步）",
+            message=msg + "（嵌入式终端未接实时源，请用 tradex-hub 同步）",
             bars_count=count,
         )
         db.add(log)
@@ -160,8 +160,9 @@ def run(
             "name": stock.name,
             "bars_count": count,
             "latest_date": latest_date.isoformat() if latest_date else None,
-            "hint": "嵌入式终端未接实时数据源，如需拉新数据请通过 trader-finance-hub 同步后导出 SQLite",
+            "hint": "嵌入式终端未接实时数据源，如需拉新数据请通过 tradex-hub 同步后导出 SQLite",
         }
+    ]
 
     # 全量同步尝试
     h = health(db)
@@ -179,7 +180,7 @@ def run(
     return {
         "message": "全量数据检查完成",
         "health": h,
-        "hint": "嵌入式终端未接实时数据源，如需拉新数据请通过 trader-finance-hub 同步后导出 SQLite",
+        "hint": "嵌入式终端未接实时数据源，如需拉新数据请通过 tradex-hub 同步后导出 SQLite",
     }
 
 
@@ -464,3 +465,99 @@ def sync_realtime(stock_code: str) -> Dict[str, Any]:
         return {"success": False, "code": stock_code, "message": err}
     quote["success"] = True
     return quote
+
+
+def sync_all_bars(
+    db: Session,
+    beg_date: str = "",
+    end_date: str = "",
+    fqt: int = 1,
+    user_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """批量同步所有股票的K线数据
+
+    遍历数据库中所有股票，逐个同步K线。
+    为避免接口限流，每只股票之间间隔 0.5 秒。
+
+    Returns:
+        {
+            "success": bool,
+            "total": int,       # 总股票数
+            "success_count": int,  # 成功数
+            "fail_count": int,    # 失败数
+            "imported_total": int,  # 导入K线总数
+            "message": str,
+        }
+    """
+    import time
+
+    stocks = db.query(Stock).filter(Stock.status == 1).all()
+    total = len(stocks)
+
+    if total == 0:
+        return {
+            "success": False,
+            "total": 0,
+            "success_count": 0,
+            "fail_count": 0,
+            "imported_total": 0,
+            "message": "股票池为空，请先点「全市场扩容股票池」",
+        }
+
+    success_count = 0
+    fail_count = 0
+    imported_total = 0
+    errors: List[str] = []
+
+    for i, stock in enumerate(stocks):
+        try:
+            result = sync_stock_bars(
+                db,
+                stock_code=stock.code,
+                beg_date=beg_date,
+                end_date=end_date,
+                fqt=fqt,
+                user_id=user_id,
+            )
+            if result.get("success"):
+                success_count += 1
+                imported_total += result.get("imported", 0)
+            else:
+                fail_count += 1
+                errors.append(f"{stock.code}: {result.get('message', '未知错误')}")
+        except Exception as e:
+            fail_count += 1
+            errors.append(f"{stock.code}: {str(e)}")
+
+        # 进度提示（每 50 只股票记录一次）
+        if (i + 1) % 50 == 0:
+            print(f"[sync_all_bars] 进度: {i+1}/{total}, 成功={success_count}, 失败={fail_count}")
+
+        # 避免接口限流
+        time.sleep(0.3)
+
+    msg = f"批量同步完成：共 {total} 只，成功 {success_count}，失败 {fail_count}，合计导入 {imported_total} 条K线"
+    if errors:
+        msg += f"（失败详情：{'; '.join(errors[:5])}{'...' if len(errors) > 5 else ''}）"
+
+    # 写汇总日志
+    log = SyncLog(
+        source="batch",
+        code="",
+        status="success" if fail_count == 0 else "failed",
+        message=msg[:500],
+        bars_count=imported_total,
+    )
+    db.add(log)
+    if user_id:
+        log_action(db, user_id, "sync_all_bars", f"total={total} success={success_count} fail={fail_count}")
+    db.commit()
+
+    return {
+        "success": fail_count == 0,
+        "total": total,
+        "success_count": success_count,
+        "fail_count": fail_count,
+        "imported_total": imported_total,
+        "message": msg,
+    }
