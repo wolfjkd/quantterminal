@@ -57,5 +57,5 @@ FILL_PRICE = "next_open"
 # 优先用环境变量（打包后无源码路径），默认值仅用于开发环境
 QUANT_PROJECTS_ROOT = Path(os.environ.get(
     "QUANT_PROJECTS_ROOT",
-    r"C:\Users\wolfj\Documents\trae_projects",
+    str(Path.home() / "quant_projects"),
 ))
